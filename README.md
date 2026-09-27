@@ -8,20 +8,20 @@ No marketplace tax. No “we’ll just add 5%.” Their tokens stay on their bil
 
 ```
 your app  →  Rivet token orchestrator
-                 ├─ Jev   classify task / hardness / experiment cell
+                 ├─ classifier slot   jev | other | rules | none
                  ├─ ledger   tokens, $, model, cluster — reopen later
                  └─ workers   your OAuth providers + local
 ```
 
-The workers write. **Jev decides.** The ledger remembers.
+The workers write. A classifier *may* decide. The ledger always remembers.
 
 ## The token orchestrator
 
 Rivet is the house for three jobs that usually rot in three different dashboards:
 
-1. **Classify** — Jev (TypeSafe System One) scores the request in one pass: task type, hardness, residency, whether this belongs in a split test. No chat. No output-token bill from the router.
-2. **Meter** — every call becomes a row you can reopen: tokens in/out, `vendor_usd`, `rivet_usd`, model, Jev labels, latency, cache hit.
-3. **Compare** — similar work (same Jev class + cluster) can run control vs challenger vs holdout. Scores come back. The winning route gets promoted. The holdout keeps the cheap path honest.
+1. **Classify (optional)** — slot: Jev, another connected classifier, rules only, or none. Same label schema when anything learned is on.
+2. **Meter** — every call becomes a row you can reopen: tokens in/out, `vendor_usd`, `rivet_usd`, model, classifier labels, latency, cache hit.
+3. **Compare** — similar work can run control vs challenger vs holdout — including **Jev vs no-Jev** vs rules. Scores come back. The winning *route and classifier* get promoted.
 
 That loop is the product: *route → spend → score → route better.* Not a one-shot proxy.
 
@@ -34,7 +34,7 @@ Most “unified LLM APIs” are merchants. They rent you someone else’s models
 Rivet is the opposite product:
 
 - **You bring the models** via OAuth (or a local adapter).
-- **Rivet brings the control plane** — Jev classifies, policy routes, the ledger keeps the film.
+- **Rivet brings the control plane** — optional classifier, policy routes, the ledger keeps the film.
 - **The receipt is the feature.** Every response says which worker ran, why, what the vendor charged, the experiment cell, and that Rivet charged nothing.
 
 That is the difference between a proxy and a product people can trust in a finance review.
@@ -64,7 +64,7 @@ Print the leave-behind: open `app/print.html` → Print → Save as PDF.
 | Policy | Cheap-first cascade, pin-local, pin-frontier, residency, max $ / call |
 | Playground | Real `/v1/chat/completions` shape your SDK already speaks |
 | Receipt + trace | The pitch in one screenshot |
-| Jev + ledger (spec) | Classify, meter, split-test, promote — [ORCHESTRATOR.md](docs/ORCHESTRATOR.md) |
+| Classifier slot + ledger (spec) | Jev, other, rules, or none — [ORCHESTRATOR.md](docs/ORCHESTRATOR.md) |
 
 Routing here is deterministic on purpose so the story is visible without burning tokens. The next step is the same UI on live OAuth grants.
 
@@ -74,7 +74,7 @@ Routing here is deterministic on purpose so the story is visible without burning
 > Work on *their* connected account: **$0 from Rivet**.  
 > Work Rivet hosts later (optional models, agents that run while you’re away): billed.
 
-Jev routing calls, if billed by TypeSafe, show up on the same receipt. Still not a Rivet markup on the worker.
+If the slot is Jev (or another paid classifier), that meter shows on the same receipt. Still not a Rivet markup on the worker.
 
 If a competitor needs a cut of your Anthropic invoice to exist, they are a marketplace. Rivet is a switchboard with a memory.
 
@@ -83,7 +83,7 @@ If a competitor needs a cut of your Anthropic invoice to exist, they are a marke
 ```
 POST /v1/chat/completions   model: "auto"
         |
-        ├─ Jev classify + assign experiment cell
+        ├─ classifier slot (jev | other | rules | none)
         ├─ semantic cache
         ├─ cheap local / small cloud
         ├─ verify → escalate to frontier
@@ -99,7 +99,7 @@ Your code never changes `base_url` again. You change policy — and you can prov
 - Anyone running vLLM / Ollama who still needs a frontier escape hatch
 - Platform people who have to show FinOps a line item that isn’t “we marked up tokens”
 - Builders who want one SDK and many backends without selling their traffic to a reseller
-- Anyone who wants Jev on the door and a token ledger they can split-test against next month
+- Anyone who wants a token ledger — with Jev, without Jev, or while they A/B the two
 
 ## Repo
 
@@ -107,7 +107,7 @@ Your code never changes `base_url` again. You change policy — and you can prov
 app/index.html           live console
 app/print.html           one-pager for print / PDF
 docs/ONEPAGER.md         same story in markdown
-docs/ORCHESTRATOR.md     Jev + ledger + split tests
+docs/ORCHESTRATOR.md     classifier slot + ledger + split tests
 ```
 
 MIT. Fork it. Point `base_url` at it when the live gateway lands.

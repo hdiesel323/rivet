@@ -1,40 +1,55 @@
 # Rivet token orchestrator
 
-Rivet is not only a door. It is the place every token is **classified, metered, compared, and replayed**.
+Rivet is not only a door. It is the place every token is **classified (optional), metered, compared, and replayed**.
 
-Jev (TypeSafe System One) sits in front of the workers. It does not write the answer. It decides.
+The **classifier is a slot**, not the product. Jev is the default *if you want System One*. You can also plug another classifier, use rules only, or run with no classifier at all.
 
 ```
 request
-  → Jev   classify task, risk, complexity, split-cell
+  → classifier slot   jev | other | rules | none
   → policy + ledger
   → worker model (their OAuth provider or local)
   → optional judge / human score
   → ledger row you can reopen
 ```
 
-## What Jev owns
+## Classifier slot
+
+Set per workspace or per route. The ledger always records which slot ran.
+
+| Mode | Who decides the route | When to use |
+|---|---|---|
+| `jev` | TypeSafe Jev — typed labels + confidence, one pass | Fast structured routing, split-cell assignment |
+| `classifier:<id>` | Any connected model or small local classifier that returns the same label schema | You already have a router model, or Jev is not allowed |
+| `rules` | Deterministic policy only (pin model, cheap-first by name, residency) | Air-gapped, zero extra calls, audits that hate learned routers |
+| `none` | Pass-through: `model` from the request, or workspace default | Bring-your-own routing in the app; Rivet is just the door + ledger |
+
+Same receipt shape in every mode. If the slot is `none` or `rules`, `classifier` and `confidence` are null. Tokens and `$` still land in the ledger so you can add a classifier later and compare eras.
+
+You can **split-test classifiers too**: cell A = Jev, cell B = rules, cell C = a small local model — on the same work cluster. That is how you decide whether Jev earns its keep.
+
+## What a classifier returns (when one is on)
 
 One forward pass, typed questions, probabilities. Typical questions:
 
 | Field | Type | Use |
-|---|---|
+|---|---|---|
 | `task` | choice | code, prose, extract, tool, chat |
 | `hardness` | score | cheap path vs escalate |
 | `residency` | noul | must stay local |
 | `experiment` | choice | control / challenger / holdout |
 | `duplicate_of` | noul | already answered; cache |
 
-Uncertain Jev → escalate the *routing* decision, not necessarily the whole job.
+Low confidence → escalate the *routing* decision, not necessarily the whole job.
 
-Jev tokens are metered too. They are cheap and output-free. They still get a ledger line so routing cost is visible.
+Classifier tokens (Jev or otherwise) are metered on the same receipt. They still get a ledger line so routing cost is visible.
 
 ## What the ledger owns
 
 Every Rivet call writes a row you can revisit:
 
 - request hash / cluster (“similar work”)
-- Jev labels + confidence
+- classifier id + labels + confidence (null if `none` / `rules`)
 - `model_used`, provider, experiment cell
 - input / output tokens, `vendor_usd`, `rivet_usd`
 - latency, fallback, cache hit
@@ -44,7 +59,7 @@ Revisit means: filter last month’s “code review” cluster, see which model 
 
 ## Split tests
 
-Similar work (same Jev task + embedding cluster) can be assigned to cells:
+Similar work (same task label + embedding cluster, or rules bucket) can be assigned to cells:
 
 - **control** — current default route
 - **challenger** — another connected model
@@ -56,7 +71,7 @@ Traffic split is a policy, not a one-off script. The orchestrator assigns the ce
 
 Loop:
 
-1. Classify (Jev)
+1. Classify if a slot is on
 2. Serve (worker)
 3. Score (judge / human / golden set)
 4. Promote the winner on that cluster
@@ -66,7 +81,7 @@ Accuracy here is “better answers on *your* distribution,” not a public leade
 
 ## Pricing (unchanged)
 
-Connectors, Jev routing, ledger, split assignment: **$0 product fee**.  
+Connectors, classifier slot, ledger, split assignment: **$0 product fee**.  
 Worker tokens on their OAuth’d account: **their vendor**.  
-Jev calls if they use TypeSafe’s API: **TypeSafe’s meter**, shown on the same receipt.  
+Jev / other paid classifier calls: **that vendor’s meter**, on the same receipt.  
 Rivet-hosted judge or long-running agents: billed later.
