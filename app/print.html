@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rivet — one-pager</title>
+  <style>
+    @page { size: Letter; margin: 0.6in; }
+    body {
+      margin: 0;
+      font: 12.5px/1.4 "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: #1c1916;
+      background: #fff;
+    }
+    .sheet { max-width: 8.5in; margin: 24px auto; padding: 0 24px 32px; }
+    header { display: flex; justify-content: space-between; border-bottom: 2px solid #1c1916; padding-bottom: 10px; }
+    .mark {
+      width: 22px; height: 22px; background: #1c1916;
+      clip-path: polygon(15% 0, 85% 0, 100% 15%, 100% 85%, 85% 100%, 15% 100%, 0 85%, 0 15%);
+      display: inline-block; vertical-align: middle; margin-right: 8px;
+    }
+    h1 { font-size: 22px; margin: 16px 0 6px; }
+    h2 { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; margin: 18px 0 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { border: 1px solid #cfc6b8; padding: 6px 8px; text-align: left; }
+    pre { background: #f4efe6; padding: 10px; font: 11px/1.35 ui-monospace, monospace; }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    footer { margin-top: 20px; font-size: 11px; color: #6f675d; border-top: 1px solid #cfc6b8; padding-top: 8px; }
+    @media print { .sheet { margin: 0; padding: 0; } .noprint { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <header>
+      <div><span class="mark"></span><strong>RIVET</strong></div>
+      <div>Proof of idea · Sept 2026 · github.com/hdiesel323/rivet</div>
+    </header>
+    <h1>One API. Your providers. Zero toll.</h1>
+    <p>Rivet is the control plane in front of models you already pay for. OAuth-connect OpenAI, Anthropic, Google, Azure, or a local runtime. Rivet routes, falls back, and prints a receipt. It does not resell tokens.</p>
+    <div class="cols">
+      <div>
+        <h2>Pricing rule</h2>
+        <table>
+          <tr><th>Surface</th><th>Price</th></tr>
+          <tr><td>Connectors + orchestration</td><td>$0</td></tr>
+          <tr><td>Tokens on their vendor</td><td>$0 from Rivet</td></tr>
+          <tr><td>Hosted Rivet compute / agents</td><td>billed later</td></tr>
+        </table>
+        <h2>Not OpenRouter</h2>
+        <p>OpenRouter is a merchant of record. Rivet is a switchboard on the customer’s own grants. No catalog tax.</p>
+      </div>
+      <div>
+        <h2>Shape</h2>
+        <pre>app → Rivet /v1/chat/completions
+        ├ cache
+        ├ router (cheap-first)
+        ├ OAuth providers
+        └ local adapter</pre>
+        <h2>Receipt fields</h2>
+        <p><code>model_used</code> · <code>why</code> · <code>vendor_usd</code> · <code>rivet_usd=0</code> · <code>escalated</code></p>
+      </div>
+    </div>
+    <h2>MVP demo</h2>
+    <p>Open <code>app/index.html</code>, grant two connectors, send a prompt with <code>model: auto</code>, screenshot the receipt. That is the proof.</p>
+    <footer>Rivet MVP · connectors are free · do not paste live keys into the demo · print this page to PDF</footer>
+    <p class="noprint"><button onclick="window.print()">Print / Save PDF</button></p>
+  </div>
+</body>
+</html>
