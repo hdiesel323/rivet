@@ -15,6 +15,42 @@ your app  →  Rivet token orchestrator
 
 The workers write. A classifier *may* decide. The ledger always remembers.
 
+![Rivet architecture](docs/diagrams/architecture.svg)
+
+```mermaid
+flowchart LR
+  A[Your app] -->|OpenAI-shaped API| R[Rivet]
+  R --> S{Classifier slot}
+  S -->|jev| J[Jev]
+  S -->|other| C[Your classifier]
+  S -->|rules / none| P[Policy only]
+  J --> L[Ledger]
+  C --> L
+  P --> L
+  L --> W[Workers]
+  W --> O1[OAuth OpenAI]
+  W --> O2[OAuth Anthropic]
+  W --> O3[OAuth Google]
+  W --> O4[Local vLLM]
+  W -->|receipt| A
+```
+
+```mermaid
+flowchart TD
+  Q[Request] --> X{Slot}
+  X -->|jev / classifier| Lab[Labels + confidence]
+  X -->|rules / none| Pol[Static policy]
+  Lab --> Cell[Experiment cell]
+  Pol --> Cell
+  Cell --> Cache{Cache?}
+  Cache -->|hit| Rec[Receipt rivet_usd = 0]
+  Cache -->|miss| Work[Worker on their account]
+  Work --> Score[Optional judge]
+  Score --> Led[Ledger row]
+  Rec --> Led
+  Led --> Next[Revisit · split · promote]
+```
+
 ## The token orchestrator
 
 Rivet is the house for three jobs that usually rot in three different dashboards:
@@ -108,6 +144,7 @@ app/index.html           live console
 app/print.html           one-pager for print / PDF
 docs/ONEPAGER.md         same story in markdown
 docs/ORCHESTRATOR.md     classifier slot + ledger + split tests
+docs/diagrams/architecture.svg
 ```
 
 MIT. Fork it. Point `base_url` at it when the live gateway lands.
