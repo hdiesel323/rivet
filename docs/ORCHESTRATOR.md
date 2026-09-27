@@ -4,6 +4,25 @@ Rivet is not only a door. It is the place every token is **classified (optional)
 
 The **classifier is a slot**, not the product. Jev is the default *if you want System One*. You can also plug another classifier, use rules only, or run with no classifier at all.
 
+![Architecture](diagrams/architecture.svg)
+
+```mermaid
+stateDiagram-v2
+  [*] --> Slot
+  Slot --> Jev: jev
+  Slot --> Other: classifier:id
+  Slot --> Rules: rules
+  Slot --> None: none
+  Jev --> Ledger
+  Other --> Ledger
+  Rules --> Ledger
+  None --> Ledger
+  Ledger --> Worker
+  Worker --> Score: optional
+  Score --> Revisit
+  Worker --> Revisit
+```
+
 ```
 request
   → classifier slot   jev | other | rules | none
