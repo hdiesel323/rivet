@@ -1,7 +1,5 @@
 # Rivet — next-level recommendations
 
-The idea is sharp. The gap is **proof you can feel in production**, not more manifesto.
-
 Written 27 Sep 2026 from the proof/MVP cut.
 
 ## Keep
