@@ -61,7 +61,7 @@ Rivet is the house for three jobs that usually rot in three different dashboards
 
 That loop is the product: *route → spend → score → route better.* Not a one-shot proxy.
 
-See [docs/ORCHESTRATOR.md](docs/ORCHESTRATOR.md).
+See [docs/ORCHESTRATOR.md](docs/ORCHESTRATOR.md). What to build next: [docs/RECOMMENDATIONS.md](docs/RECOMMENDATIONS.md).
 
 ## Why this is interesting
 
@@ -145,6 +145,7 @@ app/print.html           one-pager for print / PDF
 docs/ONEPAGER.md         same story in markdown
 docs/ORCHESTRATOR.md     classifier slot + ledger + split tests
 docs/diagrams/architecture.svg
+docs/RECOMMENDATIONS.md  what to ship next
 ```
 
 MIT. Fork it. Point `base_url` at it when the live gateway lands.
