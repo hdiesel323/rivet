@@ -2,49 +2,95 @@
 
 **One API. Your providers. Zero toll.**
 
-Rivet is a control plane in front of models you already pay for. Connect OpenAI, Anthropic, Google, Azure, and local runtimes with OAuth (or a local adapter). Rivet routes, falls back, and prints a receipt. It does not resell tokens.
+You already pay OpenAI. You already pay Anthropic. You already have a GPU in the closet. Rivet is the missing switchboard: one OpenAI-shaped door that talks to all of them, picks a route, and hands you a receipt.
 
-- Connectors + orchestration: **free**
-- Inference on *your* connected account: **your vendor bill**
-- Inference Rivet hosts (optional later): billed separately
+No marketplace tax. No “we’ll just add 5%.” Their tokens stay on their bill. Rivet’s cut on those calls is **$0**.
 
-This repo is the proof / MVP: a working console you can demo and a one-pager you can print.
+```
+your app  →  Rivet  →  OAuth’d OpenAI / Anthropic / Google / Azure / local vLLM
+                 ↳ cache · cheap-first cascade · fallback · receipt
+```
 
-## Demo
+## Why this is interesting
 
-Open `app/index.html` in a browser (no build step):
+Most “unified LLM APIs” are merchants. They rent you someone else’s models and skim the invoice.
+
+Rivet is the opposite product:
+
+- **You bring the models** via OAuth (or a local adapter).
+- **Rivet brings the control plane** — route, escalate, fail over, log `why`.
+- **The receipt is the feature.** Every response says which worker ran, why, what the vendor charged, and that Rivet charged nothing.
+
+That is the difference between a proxy and a product people can trust in a finance review.
+
+## Thirty-second demo
+
+No build. No keys. No Docker.
 
 ```bash
-cd app && python3 -m http.server 8765
-# http://localhost:8765
+git clone https://github.com/hdiesel323/rivet.git
+cd rivet/app && python3 -m http.server 8765
+# open http://localhost:8765
 ```
 
-Print sheet: `app/print.html` → File → Print → A4 / Letter.
+1. Hit **Connect** on Local vLLM + one cloud provider.
+2. Leave policy on **Cheap-first**.
+3. Send the default prompt.
+4. Read the receipt: `model_used`, `why`, `vendor_usd`, `rivet_usd = 0.00`.
 
-## What the MVP shows
+Print the leave-behind: open `app/print.html` → Print → Save as PDF.
 
-1. OAuth-style connector cards (simulated grant; no tokens leave the page).
-2. Policy: cheap-first cascade, residency, max $ per call.
-3. Playground: one `/v1/chat/completions`-shaped request.
-4. Router decision + receipt (`model_used`, `why`, `vendor_usd`, `rivet_usd = 0`).
-5. Trace log you can screenshot for a pitch.
+## What you get in the MVP
 
-Routing in this MVP is deterministic mock logic so the story is visible without keys.
+| Surface | What it proves |
+|---|---|
+| Connector cards | BYO providers, not a rented catalog |
+| Policy | Cheap-first cascade, pin-local, pin-frontier, residency, max $ / call |
+| Playground | Real `/v1/chat/completions` shape your SDK already speaks |
+| Receipt + trace | The pitch in one screenshot |
 
-## Product rule
+Routing here is deterministic on purpose so the story is visible without burning tokens. The next step is the same UI on live OAuth grants.
 
-> Connectors and orchestration: $0.  
-> Work on Rivet machines: billed.  
-> Work on the customer’s OAuth’d provider: $0 from Rivet.
+## Product rule (non-negotiable)
 
-## Repo layout
+> Connectors and orchestration: **$0**.  
+> Work on *their* connected account: **$0 from Rivet**.  
+> Work Rivet hosts later (optional models, agents that run while you’re away): billed.
+
+If a competitor needs a cut of your Anthropic invoice to exist, they are a marketplace. Rivet is a switchboard.
+
+## The shape teams actually ship
 
 ```
-app/index.html    interactive console
-app/print.html    one-pager for print / PDF
-docs/ONEPAGER.md  same copy in markdown
+POST /v1/chat/completions   model: "auto"
+        |
+        ├─ semantic cache
+        ├─ cheap local / small cloud
+        ├─ verify → escalate to frontier
+        └─ provider B if provider A 429s
 ```
+
+Your code never changes `base_url` again. You change policy.
+
+## Who this is for
+
+- A team with two provider bills and no idea which model answered last week
+- Anyone running vLLM / Ollama who still needs a frontier escape hatch
+- Platform people who have to show FinOps a line item that isn’t “we marked up tokens”
+- Builders who want one SDK and many backends without selling their traffic to a reseller
+
+## Repo
+
+```
+app/index.html     live console
+app/print.html     one-pager for print / PDF
+docs/ONEPAGER.md   same story in markdown
+```
+
+MIT. Fork it. Point `base_url` at it when the live gateway lands.
 
 ## Status
 
-Proof of idea. Not a production gateway. Do not paste real API keys into the demo.
+Proof you can hold. Not a production gateway yet — don’t paste live keys into the demo.
+
+If this is the control plane you wanted sitting in front of *your* OAuth connectors, star the repo and open an issue for the first real provider you want wired.
