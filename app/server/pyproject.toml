@@ -1,0 +1,28 @@
+[project]
+name = "rivet-server"
+version = "0.1.0"
+description = "Rivet token orchestrator — OpenAI-shaped door, BYO workers, $0 cut"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi==0.115.13",
+    "uvicorn==0.34.3",
+    "httpx==0.28.1",
+    "python-dotenv==1.0.1",
+    "pydantic==2.11.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.4.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[dependency-groups]
+dev = [
+    "pytest==8.4.1",
+]

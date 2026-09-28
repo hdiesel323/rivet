@@ -1,106 +1,58 @@
 # Rivet token orchestrator
 
-Rivet is not only a door. It is the place every token is **classified (optional), metered, compared, and replayed**.
-
-The **classifier is a slot**, not the product. Jev is the default *if you want System One*. You can also plug another classifier, use rules only, or run with no classifier at all.
-
-![Architecture](diagrams/architecture.svg)
-
-```mermaid
-stateDiagram-v2
-  [*] --> Slot
-  Slot --> Jev: jev
-  Slot --> Other: classifier:id
-  Slot --> Rules: rules
-  Slot --> None: none
-  Jev --> Ledger
-  Other --> Ledger
-  Rules --> Ledger
-  None --> Ledger
-  Ledger --> Worker
-  Worker --> Score: optional
-  Score --> Revisit
-  Worker --> Revisit
-```
+Rivet classifies (optional), routes, meters, and replays every call. The classifier is a **slot**, not the product.
 
 ```
 request
-  → classifier slot   jev | other | rules | none
-  → policy + ledger
-  → worker model (their OAuth provider or local)
-  → optional judge / human score
+  → classifier slot   none | rules | classifier:heuristic | jev
+  → exact cache
+  → policy route
+  → worker (demo / OpenAI-compatible / local)
   → ledger row you can reopen
 ```
 
+Workers write. A classifier may decide. The ledger always remembers.
+
 ## Classifier slot
 
-Set per workspace or per route. The ledger always records which slot ran.
-
-| Mode | Who decides the route | When to use |
+| Mode | Who decides the route | Receipt |
 |---|---|---|
-| `jev` | TypeSafe Jev — typed labels + confidence, one pass | Fast structured routing, split-cell assignment |
-| `classifier:<id>` | Any connected model or small local classifier that returns the same label schema | You already have a router model, or Jev is not allowed |
-| `rules` | Deterministic policy only (pin model, cheap-first by name, residency) | Air-gapped, zero extra calls, audits that hate learned routers |
-| `none` | Pass-through: `model` from the request, or workspace default | Bring-your-own routing in the app; Rivet is just the door + ledger |
+| `none` | Request `model`, or cheap default if `auto` | `classifier.labels` null |
+| `rules` | Deterministic policy (pin, cheap-first, residency, max $) | null |
+| `classifier:heuristic` | Local labels + confidence, same schema as Jev | labels + confidence |
+| `jev` | `POST JEV_URL` `{ "text" }` | labels + confidence; 400 if unset |
 
-Same receipt shape in every mode. If the slot is `none` or `rules`, `classifier` and `confidence` are null. Tokens and `$` still land in the ledger so you can add a classifier later and compare eras.
+Low confidence (&lt; 0.4) escalates the **routing** decision, not necessarily the whole job.
 
-You can **split-test classifiers too**: cell A = Jev, cell B = rules, cell C = a small local model — on the same work cluster. That is how you decide whether Jev earns its keep.
-
-## What a classifier returns (when one is on)
-
-One forward pass, typed questions, probabilities. Typical questions:
+### Label schema (when a classifier is on)
 
 | Field | Type | Use |
 |---|---|---|
-| `task` | choice | code, prose, extract, tool, chat |
-| `hardness` | score | cheap path vs escalate |
-| `residency` | noul | must stay local |
-| `experiment` | choice | control / challenger / holdout |
-| `duplicate_of` | noul | already answered; cache |
+| `task` | choice: code, prose, extract, tool, chat | cluster + later splits |
+| `hardness` | number 0–1 | cheap path vs escalate |
+| `residency` | bool | must stay local |
+| `experiment` | choice or null | control / challenger / holdout |
+| `duplicate_of` | string or null | already answered |
 
-Low confidence → escalate the *routing* decision, not necessarily the whole job.
+`rules` hardness uses word boundaries. `improve` does not match `prove`; `illegal` does not match `legal opinion`.
 
-Classifier tokens (Jev or otherwise) are metered on the same receipt. They still get a ledger line so routing cost is visible.
+## Ledger
 
-## What the ledger owns
+Every call writes a row: request hash, cluster, slot, labels, model, provider, cell, tokens, `vendor_usd`, `rivet_usd`, latency, fallback, cache hit, why.
 
-Every Rivet call writes a row you can revisit:
+Reopen: `GET /v1/ledger/{id}` or `GET /v1/ledger.csv`.
 
-- request hash / cluster (“similar work”)
-- classifier id + labels + confidence (null if `none` / `rules`)
-- `model_used`, provider, experiment cell
-- input / output tokens, `vendor_usd`, `rivet_usd`
-- latency, fallback, cache hit
-- quality score when one exists (judge, human, eval set)
-
-Revisit means: filter last month’s “code review” cluster, see which model won on score per dollar, promote that route.
+Exact cache: same messages + policy hash returns the prior completion with `cache_hit=true` and `vendor_usd=0`.
 
 ## Split tests
 
-Similar work (same task label + embedding cluster, or rules bucket) can be assigned to cells:
+`rivet.split_challenger_pct` assigns a stable cell from the request hash **before** the worker runs. Challenger uses the other end of the cheap/frontier pair. Residency pins do not split onto cloud.
 
-- **control** — current default route
-- **challenger** — another connected model
-- **holdout** — occasional frontier check so the cheap path cannot silently rot
+No quality delta is reported unless a score exists. The fixture is unscored.
 
-Traffic split is a policy, not a one-off script. The orchestrator assigns the cell *before* the worker runs, so the comparison is on the same class of work.
+## Pricing
 
-## Improve the route
-
-Loop:
-
-1. Classify if a slot is on
-2. Serve (worker)
-3. Score (judge / human / golden set)
-4. Promote the winner on that cluster
-5. Keep a holdout so you notice regressions
-
-Accuracy here is “better answers on *your* distribution,” not a public leaderboard.
-
-## Pricing (unchanged)
-
-Connectors, classifier slot, ledger, split assignment: **$0 product fee**.  
-Worker tokens on their OAuth’d account: **their vendor**.  
-Jev / other paid classifier calls: **that vendor’s meter**, on the same receipt.  
-Rivet-hosted judge or long-running agents: billed later.
+Connectors, slot, ledger, split assignment: **$0 product fee**.  
+Worker tokens on their account: **their vendor**.  
+Classifier HTTP (Jev): **that vendor**, still on the same receipt.  
+`rivet_usd` is 0.0 on every BYO worker path in this MVP.

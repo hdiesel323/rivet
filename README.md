@@ -2,15 +2,15 @@
 
 **One API. Your providers. Zero toll.**
 
-You already pay OpenAI. You already pay Anthropic. You already have a GPU in the closet. Rivet is the missing switchboard: one OpenAI-shaped door that talks to all of them, picks a route, and hands you a receipt.
+You already pay OpenAI. You already have a GPU in the closet. Rivet is the missing switchboard: one OpenAI-shaped door that talks to them, picks a route, and hands you a receipt.
 
-No marketplace tax. No “we’ll just add 5%.” Their tokens stay on their bill. Rivet’s cut on those calls is **$0**.
+No marketplace tax. Their tokens stay on their bill. Rivet’s cut on those calls is **$0**.
 
 ```
 your app  →  Rivet token orchestrator
-                 ├─ classifier slot   jev | other | rules | none
+                 ├─ classifier slot   none | rules | heuristic | jev
                  ├─ ledger   tokens, $, model, cluster — reopen later
-                 └─ workers   your OAuth providers + local
+                 └─ workers   OpenAI-compatible + local + demo
 ```
 
 The workers write. A classifier *may* decide. The ledger always remembers.
@@ -22,136 +22,99 @@ flowchart LR
   A[Your app] -->|OpenAI-shaped API| R[Rivet]
   R --> S{Classifier slot}
   S -->|jev| J[Jev]
-  S -->|other| C[Your classifier]
+  S -->|heuristic| H[Local labels]
   S -->|rules / none| P[Policy only]
-  J --> L[Ledger]
-  C --> L
-  P --> L
-  L --> W[Workers]
-  W --> O1[OAuth OpenAI]
-  W --> O2[OAuth Anthropic]
-  W --> O3[OAuth Google]
-  W --> O4[Local vLLM]
-  W -->|receipt| A
+  J --> W[Workers]
+  H --> W
+  P --> W
+  W --> L[Ledger]
+  L -->|receipt| A
 ```
 
-```mermaid
-flowchart TD
-  Q[Request] --> X{Slot}
-  X -->|jev / classifier| Lab[Labels + confidence]
-  X -->|rules / none| Pol[Static policy]
-  Lab --> Cell[Experiment cell]
-  Pol --> Cell
-  Cell --> Cache{Cache?}
-  Cache -->|hit| Rec[Receipt rivet_usd = 0]
-  Cache -->|miss| Work[Worker on their account]
-  Work --> Score[Optional judge]
-  Score --> Led[Ledger row]
-  Rec --> Led
-  Led --> Next[Revisit · split · promote]
-```
+This repository is a **part** of a larger agentic operating system — the token plane. Command, Control, and Kanister bolt on through the same API. See [docs/AGENTIC_OS.md](docs/AGENTIC_OS.md).
 
-## The token orchestrator
-
-Rivet is the house for three jobs that usually rot in three different dashboards:
-
-1. **Classify (optional)** — slot: Jev, another connected classifier, rules only, or none. Same label schema when anything learned is on.
-2. **Meter** — every call becomes a row you can reopen: tokens in/out, `vendor_usd`, `rivet_usd`, model, classifier labels, latency, cache hit.
-3. **Compare** — similar work can run control vs challenger vs holdout — including **Jev vs no-Jev** vs rules. Scores come back. The winning *route and classifier* get promoted.
-
-That loop is the product: *route → spend → score → route better.* Not a one-shot proxy.
-
-See [docs/ORCHESTRATOR.md](docs/ORCHESTRATOR.md). What to build next: [docs/RECOMMENDATIONS.md](docs/RECOMMENDATIONS.md).
-
-## Why this is interesting
-
-Most “unified LLM APIs” are merchants. They rent you someone else’s models and skim the invoice.
-
-Rivet is the opposite product:
-
-- **You bring the models** via OAuth (or a local adapter).
-- **Rivet brings the control plane** — optional classifier, policy routes, the ledger keeps the film.
-- **The receipt is the feature.** Every response says which worker ran, why, what the vendor charged, the experiment cell, and that Rivet charged nothing.
-
-That is the difference between a proxy and a product people can trust in a finance review.
-
-## Thirty-second demo
-
-No build. No keys. No Docker.
+## Quick start
 
 ```bash
 git clone https://github.com/hdiesel323/rivet.git
-cd rivet/app && python3 -m http.server 8765
-# open http://localhost:8765
+cd rivet
+./scripts/start.sh
+# console  http://localhost:5173
+# API      http://127.0.0.1:8000
 ```
 
-1. Hit **Connect** on Local vLLM + one cloud provider.
-2. Leave policy on **Cheap-first**.
-3. Send the default prompt.
-4. Read the receipt: `model_used`, `why`, `vendor_usd`, `rivet_usd = 0.00`.
+Prerequisites: Python 3.10+, [uv](https://docs.astral.sh/uv/), Node 18+.
 
-Print the leave-behind: open `app/print.html` → Print → Save as PDF.
+No API keys required. The demo worker stays on this machine. To hit a live model:
 
-## What you get in the MVP
+```bash
+cp app/server/.env.sample app/server/.env
+# set OPENAI_API_KEY=...   or LOCAL_BASE_URL=http://127.0.0.1:8000/v1
+```
+
+```bash
+curl -s http://127.0.0.1:8000/v1/chat/completions \
+  -H 'content-type: application/json' \
+  -d '{"model":"auto","messages":[{"role":"user","content":"Hello from Rivet"}]}'
+```
+
+Read `rivet.model_used`, `rivet.why`, `usage`, `vendor_usd`, `rivet_usd = 0`.
+
+Print the leave-behind: http://localhost:5173/print.html
+
+## What this MVP does
 
 | Surface | What it proves |
 |---|---|
-| Connector cards | BYO providers, not a rented catalog |
+| `POST /v1/chat/completions` | OpenAI shape your SDK already speaks (`usage`, `created`, `finish_reason`) |
+| Classifier slot | `none`, `rules`, `classifier:heuristic`, `jev` (needs `JEV_URL`) |
 | Policy | Cheap-first cascade, pin-local, pin-frontier, residency, max $ / call |
-| Playground | Real `/v1/chat/completions` shape your SDK already speaks |
-| Receipt + trace | The pitch in one screenshot |
-| Classifier slot + ledger (spec) | Jev, other, rules, or none — [ORCHESTRATOR.md](docs/ORCHESTRATOR.md) |
+| Ledger | SQLite reopen + CSV export |
+| Cache | Exact-match hit → `vendor_usd = 0` |
+| Console | Connectors, slot, playground, receipt, fixture compare |
+| Fixture | 50 labeled prompts; compare does **not** invent quality scores |
 
-Routing here is deterministic on purpose so the story is visible without burning tokens. The next step is the same UI on live OAuth grants.
+OAuth grants are the destination. This cut uses env keys and a local base URL.
 
 ## Product rule (non-negotiable)
 
-> Connectors and orchestration: **$0**.  
-> Work on *their* connected account: **$0 from Rivet**.  
+> Connectors and orchestration: **$0**.
+> Work on *their* connected account: **$0 from Rivet**.
 > Work Rivet hosts later (optional models, agents that run while you’re away): billed.
 
 If the slot is Jev (or another paid classifier), that meter shows on the same receipt. Still not a Rivet markup on the worker.
 
-If a competitor needs a cut of your Anthropic invoice to exist, they are a marketplace. Rivet is a switchboard with a memory.
-
-## The shape teams actually ship
+## Drop-in
 
 ```
-POST /v1/chat/completions   model: "auto"
-        |
-        ├─ classifier slot (jev | other | rules | none)
-        ├─ semantic cache
-        ├─ cheap local / small cloud
-        ├─ verify → escalate to frontier
-        ├─ provider B if provider A 429s
-        └─ ledger row (tokens, $, cluster, score when it exists)
+OPENAI_BASE_URL=http://127.0.0.1:8000/v1
 ```
 
-Your code never changes `base_url` again. You change policy — and you can prove the new policy won.
+Your code never changes `base_url` again. You change policy — and you can prove the new policy’s spend.
 
-## Who this is for
-
-- A team with two provider bills and no idea which model answered last week
-- Anyone running vLLM / Ollama who still needs a frontier escape hatch
-- Platform people who have to show FinOps a line item that isn’t “we marked up tokens”
-- Builders who want one SDK and many backends without selling their traffic to a reseller
-- Anyone who wants a token ledger — with Jev, without Jev, or while they A/B the two
-
-## Repo
+## Project structure
 
 ```
-app/index.html           live console
-app/print.html           one-pager for print / PDF
-docs/ONEPAGER.md         same story in markdown
-docs/ORCHESTRATOR.md     classifier slot + ledger + split tests
-docs/diagrams/architecture.svg
-docs/RECOMMENDATIONS.md  what to ship next
+app/client          Vite + TypeScript console
+app/server          FastAPI orchestrator, SQLite ledger
+specs/              feature contract
+scripts/start.sh    backend + frontend
+docs/               orchestrator, OS bolt-in, one-pager
 ```
 
-MIT. Fork it. Point `base_url` at it when the live gateway lands.
+### Manual start
 
-## Status
+```bash
+cd app/server && uv sync --all-extras && uv run python server.py
+cd app/client && npm install && npm run dev
+cd app/server && uv run pytest -q
+```
 
-Proof you can hold. Not a production gateway yet — don’t paste live keys into the demo.
+## Docs
 
-If this is the control plane you wanted sitting in front of *your* OAuth connectors, star the repo and open an issue for the first real provider you want wired.
+- [docs/ORCHESTRATOR.md](docs/ORCHESTRATOR.md) — slot, ledger, splits
+- [docs/AGENTIC_OS.md](docs/AGENTIC_OS.md) — how this part bolts into Command/Control
+- [docs/ROADMAP.md](docs/ROADMAP.md) — OAuth, streaming, scored promote
+- [specs/001-token-orchestrator.md](specs/001-token-orchestrator.md) — acceptance contract
+
+MIT. Fork it. Point `base_url` at it.

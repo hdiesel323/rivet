@@ -32,10 +32,10 @@
   <div class="sheet">
     <header>
       <div><span class="mark"></span><strong>RIVET</strong></div>
-      <div>Proof of idea · Sept 2026 · github.com/hdiesel323/rivet</div>
+      <div>MVP · 2026 · github.com/hdiesel323/rivet</div>
     </header>
     <h1>One API. Your providers. Zero toll.</h1>
-    <p>Rivet is the control plane in front of models you already pay for. OAuth-connect OpenAI, Anthropic, Google, Azure, or a local runtime. Rivet routes, falls back, and prints a receipt. It does not resell tokens.</p>
+    <p>Rivet is the token plane in front of models you already pay for. Point any OpenAI SDK at it. It routes, caches, falls back, and writes a ledger row. It does not resell tokens.</p>
     <div class="cols">
       <div>
         <h2>Pricing rule</h2>
@@ -46,22 +46,23 @@
           <tr><td>Hosted Rivet compute / agents</td><td>billed later</td></tr>
         </table>
         <h2>Not OpenRouter</h2>
-        <p>OpenRouter is a merchant of record. Rivet is a switchboard on the customer’s own grants. No catalog tax.</p>
+        <p>OpenRouter is a merchant of record. Rivet is a switchboard on the customer’s own keys or local runtime. No catalog tax.</p>
       </div>
       <div>
         <h2>Shape</h2>
         <pre>app → Rivet /v1/chat/completions
+        ├ classifier slot
         ├ cache
         ├ router (cheap-first)
-        ├ OAuth providers
-        └ local adapter</pre>
+        ├ OpenAI-compatible worker
+        └ ledger receipt</pre>
         <h2>Receipt fields</h2>
-        <p><code>model_used</code> · <code>why</code> · <code>vendor_usd</code> · <code>rivet_usd=0</code> · <code>escalated</code></p>
+        <p><code>model_used</code> · <code>why</code> · <code>vendor_usd</code> · <code>rivet_usd=0</code> · <code>usage</code></p>
       </div>
     </div>
     <h2>MVP demo</h2>
-    <p>Open <code>app/index.html</code>, grant two connectors, send a prompt with <code>model: auto</code>, screenshot the receipt. That is the proof.</p>
-    <footer>Rivet MVP · connectors are free · do not paste live keys into the demo · print this page to PDF</footer>
+    <p>Run <code>./scripts/start.sh</code>, send <code>model: auto</code>, screenshot the receipt. Demo worker needs no keys. Set <code>OPENAI_API_KEY</code> for a live worker.</p>
+    <footer>Rivet MVP · token plane of a larger agentic OS · do not paste live keys into issues · print this page to PDF</footer>
     <p class="noprint"><button onclick="window.print()">Print / Save PDF</button></p>
   </div>
 </body>

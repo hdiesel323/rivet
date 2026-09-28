@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/mark.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rivet — console</title>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div class="brand">
+          <div class="mark" aria-hidden="true"></div>
+          <div>
+            <strong>RIVET</strong>
+            <div class="tiny">token plane · $0 on their tokens</div>
+          </div>
+        </div>
+        <nav>
+          <a href="/print.html">Print one-pager</a>
+          <a href="https://github.com/hdiesel323/rivet">GitHub</a>
+        </nav>
+      </header>
+      <main>
+        <aside>
+          <h2>Connectors</h2>
+          <p class="tiny">Status from the server env. Nothing is OAuth yet.</p>
+          <div id="connectors"></div>
+          <h2 class="spaced">Policy</h2>
+          <div class="card">
+            <label class="tiny" for="slot">Classifier slot</label>
+            <select id="slot">
+              <option value="rules">rules</option>
+              <option value="none">none</option>
+              <option value="classifier:heuristic">classifier:heuristic</option>
+              <option value="jev">jev</option>
+            </select>
+            <label class="tiny" for="policy">Route</label>
+            <select id="policy">
+              <option value="cascade">Cheap-first, escalate on fail</option>
+              <option value="pin-local">Pin local only</option>
+              <option value="pin-frontier">Pin frontier</option>
+            </select>
+            <label class="tiny" for="maxusd">Max vendor $ / call</label>
+            <input id="maxusd" type="number" step="0.001" value="0.05" />
+            <label class="tiny" for="residency">Residency</label>
+            <select id="residency">
+              <option value="any">Any region</option>
+              <option value="local">Local / VPC only</option>
+            </select>
+          </div>
+        </aside>
+        <section>
+          <h2>Playground · POST /v1/chat/completions</h2>
+          <div class="card">
+            <label class="tiny" for="model">model</label>
+            <input id="model" value="auto" />
+            <label class="tiny" for="prompt">messages[0].content</label>
+            <textarea id="prompt">Write a 2-line status update for the Rivet MVP. Keep it dry.</textarea>
+            <div class="row">
+              <button id="send" type="button">Send through Rivet</button>
+              <span class="tiny">base_url = http://127.0.0.1:8000/v1</span>
+            </div>
+          </div>
+          <h2>Response</h2>
+          <pre id="out">idle — start the server, then send.</pre>
+          <h2>Fixture compare (rules vs none)</h2>
+          <div class="row">
+            <button id="eval" class="ghost" type="button">Run 20 prompts</button>
+            <span class="tiny">No quality delta is claimed. Spend and routes only.</span>
+          </div>
+          <pre id="evalout"></pre>
+        </section>
+        <aside class="rail">
+          <h2>Receipt</h2>
+          <dl class="receipt card" id="receipt">
+            <dt>model_used</dt><dd id="r-model">—</dd>
+            <dt>why</dt><dd id="r-why">—</dd>
+            <dt>vendor_usd</dt><dd id="r-vendor">—</dd>
+            <dt>rivet_usd</dt><dd id="r-rivet">0.00</dd>
+            <dt>escalated</dt><dd id="r-esc">—</dd>
+            <dt>cache_hit</dt><dd id="r-cache">—</dd>
+            <dt>slot</dt><dd id="r-slot">—</dd>
+          </dl>
+          <h2>Ledger</h2>
+          <p class="tiny"><a href="http://127.0.0.1:8000/v1/ledger.csv">CSV export</a></p>
+          <div id="trace" class="tiny"></div>
+        </aside>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
